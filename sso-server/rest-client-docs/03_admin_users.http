@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:8080
+@adminEmail = admin@sso.local
+@adminPassword = Password123!
+
+### Admin Login
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "REST Client"
+}
+
+### List Users
+GET {{baseUrl}}/admin/api/users?page=1&limit=10&search=
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Create User
+# @name createUser
+POST {{baseUrl}}/admin/api/users
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "email": "newuser12@gmail.com",
+  "name": "New User A",
+  "password": "BukimAstaga12!",
+  "role_ids": ["efb17972-7535-44d0-b7f7-5953bf592cc7"]
+}
+
+### Get User Details
+GET {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Update User
+PUT {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "Updated User Name",
+  "email": "updated12@example.com",
+  "is_active": true
+}
+
+### Reset User Password
+POST {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}/reset-password
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "password": "ResetPassword123!"
+}
+
+### Unlock User
+POST {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}/unlock
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Assign Role to User
+# Needs a valid role ID
+@roleId = role_id_placeholder 
+POST {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}/roles/{{roleId}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Remove Role from User
+DELETE {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}/roles/{{roleId}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Delete User
+DELETE {{baseUrl}}/admin/api/users/{{createUser.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}

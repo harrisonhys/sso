@@ -1,0 +1,94 @@
+@baseUrl = http://localhost:8080
+@adminEmail = admin@sso.local
+@adminPassword = Password123!
+
+### Admin Login
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "REST Client"
+}
+
+### List Roles
+GET {{baseUrl}}/admin/api/roles
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Create Role
+# @name createRole
+POST {{baseUrl}}/admin/api/roles
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "editor",
+  "description": "Content Editor Role"
+}
+
+### Get Role
+GET {{baseUrl}}/admin/api/roles/{{createRole.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Update Role
+PUT {{baseUrl}}/admin/api/roles/{{createRole.response.body.id}}
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "senior-editor",
+  "description": "Senior Content Editor"
+}
+
+### List Permissions
+GET {{baseUrl}}/admin/api/permissions
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Create Permission
+# @name createPermission
+POST {{baseUrl}}/admin/api/permissions
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "edit_posts",
+  "description": "Can edit blog posts",
+  "resource": "posts",
+  "action": "edit"
+}
+
+### Update Permission
+PUT {{baseUrl}}/admin/api/permissions/{{createPermission.response.body.id}}
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "edit_all_posts",
+  "description": "Can edit all posts",
+  "resource": "posts",
+  "action": "edit_all"
+}
+
+### Assign Permission to Role
+POST {{baseUrl}}/admin/api/roles/{{createRole.response.body.id}}/permissions
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "permission_ids": ["{{createPermission.response.body.id}}"]
+}
+
+### Remove Permission from Role
+DELETE {{baseUrl}}/admin/api/roles/{{createRole.response.body.id}}/permissions/{{createPermission.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Delete Permission
+DELETE {{baseUrl}}/admin/api/permissions/{{createPermission.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Delete Role
+DELETE {{baseUrl}}/admin/api/roles/{{createRole.response.body.id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}

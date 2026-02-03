@@ -1,0 +1,64 @@
+@baseUrl = http://localhost:8080
+@adminEmail = admin@sso.local
+@adminPassword = Password123!
+
+### Admin Login
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "REST Client"
+}
+
+### Get System Info
+GET {{baseUrl}}/admin/api/system
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Get Dashboard Stats
+GET {{baseUrl}}/admin/api/stats
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### List All Configs
+GET {{baseUrl}}/admin/api/config
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Get Specific Config
+GET {{baseUrl}}/admin/api/config/password_policy
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Update Config
+PUT {{baseUrl}}/admin/api/config/password_policy
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "value": "{\"min_length\": 12, \"require_special\": true}"
+}
+
+### List Audit Logs
+GET {{baseUrl}}/admin/api/audit-logs?page=1&limit=20
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Register OAuth2 Client (Admin)
+# @name registerClient
+POST {{baseUrl}}/admin/oauth2/clients
+Content-Type: application/json
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+{
+  "name": "Management Dashboard",
+  "redirect_uris": ["http://localhost:3000/callback"],
+  "allowed_scopes": ["openid", "profile", "email", "admin"]
+}
+
+### Get OAuth2 Client
+GET {{baseUrl}}/admin/oauth2/clients/{{registerClient.response.body.client_id}}
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}
+
+### Regenerate Client Secret
+POST {{baseUrl}}/admin/oauth2/clients/{{registerClient.response.body.client_id}}/regenerate-secret
+Cookie: session_token={{adminLogin.response.headers.Set-Cookie}}

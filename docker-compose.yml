@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: sso-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sso-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sso-server:
+    build:
+      context: ./sso-server
+      dockerfile: Dockerfile
+    container_name: sso-server
+    ports:
+      - "3000:3000"
+    environment:
+      - SERVER_PORT=3000
+      - SERVER_HOST=0.0.0.0
+      - SERVER_BASE_URL=http://localhost:3000
+      - DB_HOST=host.docker.internal
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=sso-main
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=development-secret-key-change-in-production
+      - ENV=development
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=json
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - sso-network
+    volumes:
+      - ./sso-server:/app
+    restart: unless-stopped
+
+  sso-client:
+    build:
+      context: ./sso-client
+      dockerfile: Dockerfile
+    container_name: sso-client
+    ports:
+      - "3001:3001"
+    environment:
+      - NUXT_PORT=3001
+      - NUXT_HOST=0.0.0.0
+      - SSO_SERVER_URL=http://sso-server:3000
+      - OAUTH_CLIENT_ID=client-app-1
+      - OAUTH_CLIENT_SECRET=client-secret-1
+    depends_on:
+      - sso-server
+    networks:
+      - sso-network
+    volumes:
+      - ./sso-client:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  sso-management-api:
+    build:
+      context: ./sso-management/api
+      dockerfile: Dockerfile
+    container_name: sso-management-api
+    ports:
+      - "3003:3003"
+    environment:
+      - SERVER_PORT=3003
+      - SERVER_HOST=0.0.0.0
+      - DB_HOST=host.docker.internal
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_pass
+      - DB_NAME=app_db
+      - JWT_SECRET=development-secret-key-change-in-production
+      - ENV=development
+      - LOG_LEVEL=debug
+    depends_on:
+      - redis
+    networks:
+      - sso-network
+    volumes:
+      - ./sso-management/api:/app
+    restart: unless-stopped
+
+  sso-management-ui:
+    build:
+      context: ./sso-management/ui
+      dockerfile: Dockerfile
+    container_name: sso-management-ui
+    ports:
+      - "3002:3002"
+    environment:
+      - NUXT_PORT=3002
+      - NUXT_HOST=0.0.0.0
+      - API_BASE_URL=http://sso-management-api:3003
+      - SSO_SERVER_URL=http://sso-server:3000
+    depends_on:
+      - sso-management-api
+    networks:
+      - sso-network
+    volumes:
+      - ./sso-management/ui:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: sso-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - sso-server
+      - sso-client
+      - sso-management-api
+      - sso-management-ui
+    networks:
+      - sso-network
+    restart: unless-stopped
+
+networks:
+  sso-network:
+    driver: bridge
+
+volumes:
+  redis_data:

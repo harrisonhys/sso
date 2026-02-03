@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # 1. Reverse Proxy (Gateway)
+  nginx:
+    image: nginx:alpine
+    container_name: sso-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - sso-server
+      - sso-management
+    networks:
+      - sso-network
+    restart: always
+
+  # 2. Main Server (Backend + Login UI)
+  sso-server:
+    build:
+      context: ../
+      dockerfile: deploy/docker/server/Dockerfile
+    container_name: sso-server
+    environment:
+      - SERVER_PORT=3000
+      - DB_HOST=sso-db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=sso_main
+      - REDIS_HOST=sso-redis
+      - ENV=production
+      - LOG_LEVEL=info
+    depends_on:
+      - sso-db
+      - sso-redis
+    networks:
+      - sso-network
+    restart: always
+
+  # 3. Management UI (Admin Panel)
+  sso-management:
+    build:
+      context: ../
+      dockerfile: deploy/docker/management/Dockerfile
+    container_name: sso-management
+    networks:
+      - sso-network
+    restart: always
+
+  # 4. Database
+  sso-db:
+    image: mysql:8.0
+    container_name: sso-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=sso_main
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - sso-network
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  # 5. Redis
+  sso-redis:
+    image: redis:7-alpine
+    container_name: sso-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - sso-network
+    restart: always
+
+networks:
+  sso-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:

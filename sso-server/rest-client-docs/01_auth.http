@@ -1,0 +1,64 @@
+@baseUrl = http://localhost:8080
+@email = admin@sso.local
+@password = Password123!
+@newPassword = NewPassword123!
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "REST Client"
+}
+
+### Verify 2FA (If login returns requires_two_factor=true)
+POST {{baseUrl}}/auth/verify-2fa
+Content-Type: application/json
+
+{
+  "temp_token": "{{login.response.body.temp_token}}",
+  "code": "123456"
+}
+
+### Refresh Session
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+Cookie: session_token={{login.response.headers.Set-Cookie}}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+Cookie: session_token={{login.response.headers.Set-Cookie}}
+
+### Forgot Password
+POST {{baseUrl}}/password/forgot
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### Reset Password
+POST {{baseUrl}}/password/reset
+Content-Type: application/json
+
+{
+  "token": "reset_token_from_email",
+  "password": "{{newPassword}}",
+  "confirm_password": "{{newPassword}}"
+}
+
+### Change Password (Protected)
+POST {{baseUrl}}/password/change
+Content-Type: application/json
+Cookie: session_token={{login.response.headers.Set-Cookie}}
+
+{
+  "current_password": "{{password}}",
+  "new_password": "{{newPassword}}",
+  "confirm_password": "{{newPassword}}"
+}
