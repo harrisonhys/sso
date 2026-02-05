@@ -308,7 +308,7 @@ func main() {
 
 	// OAuth2 routes
 	oauth2 := app.Group("/oauth2")
-	oauth2.Get("/authorize", middleware.AuthMiddleware(sessionService), oauth2Handler.Authorize)                 // Protected - requires login
+	oauth2.Get("/authorize", oauth2Handler.Authorize)                                                            // Handler has its own auth check with redirect logic
 	oauth2.Post("/authorize/consent", middleware.AuthMiddleware(sessionService), oauth2Handler.AuthorizeConsent) // Protected - consent submission
 	oauth2.Post("/token", oauth2Handler.Token)                                                                   // Public - token exchange
 	oauth2.Post("/revoke", oauth2Handler.Revoke)                                                                 // Public - token revocation

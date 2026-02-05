@@ -74,7 +74,7 @@ func (h *OAuth2Handler) Authorize(c *fiber.Ctx) error {
 	if userID == nil {
 		// Redirect to login with return URL
 		returnURL := c.OriginalURL()
-		return c.Redirect("/login.html?return_url=" + returnURL)
+		return c.Redirect("http://localhost:3000/login?return_url=" + returnURL)
 	}
 
 	userIDStr := userID.(string)
@@ -92,16 +92,15 @@ func (h *OAuth2Handler) Authorize(c *fiber.Ctx) error {
 
 	// If consent is missing, show consent screen
 	if !hasConsent || len(missingScopes) > 0 {
-		// Render consent screen
-		return c.Render("oauth2/consent", fiber.Map{
-			"client_id":             clientID,
-			"redirect_uri":          redirectURI,
-			"scope":                 scope,
-			"state":                 state,
-			"code_challenge":        codeChallenge,
-			"code_challenge_method": codeChallengeMethod,
-			"requested_scopes":      scopes,
-		})
+		// Redirect to Nuxt UI consent page
+		consentURL := "http://localhost:3000/oauth2-consent?" +
+			"client_id=" + clientID +
+			"&redirect_uri=" + redirectURI +
+			"&scope=" + scope +
+			"&state=" + state +
+			"&code_challenge=" + codeChallenge +
+			"&code_challenge_method=" + codeChallengeMethod
+		return c.Redirect(consentURL)
 	}
 
 	// User has consented, generate authorization code

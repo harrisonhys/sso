@@ -148,9 +148,10 @@ const handleLogin = async () => {
       sessionStorage.setItem('user_email', form.value.email)
 
       // Redirect to callback URL or default
-      const redirectUrl = new URLSearchParams(window.location.search).get('redirect_uri')
-      if (redirectUrl) {
-        window.location.href = redirectUrl
+      const returnUrl = new URLSearchParams(window.location.search).get('return_url')
+      if (returnUrl) {
+        // Redirect back to the OAuth2 flow
+        window.location.href = returnUrl
       } else {
         // Default redirect to success page
         await router.push('/success')
